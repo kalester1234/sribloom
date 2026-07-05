@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Filter } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const MOCK_ORDERS: any[] = []
 
@@ -17,10 +18,48 @@ const STATUS_COLORS: Record<string, string> = {
 const ALL_STATUSES = ['all', 'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
 
 export default function AdminOrdersPage() {
+  const supabase = createClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [orders, setOrders] = useState(MOCK_ORDERS)
+  const [orders, setOrders] = useState<any[]>([])
+
+  const fetchOrders = async () => {
+    const { data: dbOrders } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false })
+
+    if (dbOrders) {
+      const formatted = dbOrders.map((o: any) => ({
+        id: o.id.split('-').pop(), // Display shortened UUID
+        raw_id: o.id,
+        name: o.shipping_address?.full_name || 'Guest',
+        email: o.guest_email || 'No Email',
+        items: o.order_items?.length || 0,
+        product: o.order_items?.[0]?.product_name || 'No Items',
+        total: o.total,
+        status: o.status,
+        date: o.created_at
+      }))
+      setOrders(formatted)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const filtered = orders.filter((o) => {
     const matchesSearch =
@@ -33,11 +72,7 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId)
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 600))
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    )
+    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
     setUpdatingId(null)
   }
 
@@ -220,9 +255,9 @@ export default function AdminOrdersPage() {
                   <td style={{ padding: '1rem 1.25rem' }}>
                     <select
                       value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      id={`update-status-${order.id}`}
-                      disabled={updatingId === order.id}
+                      onChange={(e) => handleStatusChange(order.raw_id, e.target.value)}
+                      id={`update-status-${order.raw_id}`}
+                      disabled={updatingId === order.raw_id}
                       style={{
                         padding: '0.375rem 0.75rem',
                         background: 'var(--color-surface-2)',

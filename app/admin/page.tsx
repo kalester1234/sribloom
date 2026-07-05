@@ -1,6 +1,10 @@
+'use client'
+
 import { PRODUCTS } from '@/lib/products'
 import Link from 'next/link'
 import { Package, ShoppingCart, DollarSign, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from 'react'
 
 const MOCK_STATS = {
   totalRevenue: 4820.0,
@@ -21,6 +25,47 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminDashboard() {
+  const supabase = createClient()
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [totalOrders, setTotalOrders] = useState(0)
+
+  const fetchDashboardData = async () => {
+    const { data: dbOrders } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false })
+      
+    if (dbOrders) {
+      setTotalOrders(dbOrders.length)
+      const recent = dbOrders.slice(0, 5).map((o: any) => ({
+        id: o.id.split('-').pop(),
+        name: o.shipping_address?.full_name || 'Guest',
+        product: o.order_items?.[0]?.product_name || 'No Items',
+        total: o.total,
+        status: o.status,
+      }))
+      setRecentOrders(recent)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchDashboardData()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // Override total orders from mock to actual live DB
+  const MOCK_STATS_REAL = { ...MOCK_STATS, totalOrders }
+
   return (
     <div style={{ padding: '0 2rem 3rem' }}>
       <div style={{ marginBottom: '2rem' }}>
@@ -60,7 +105,7 @@ export default function AdminDashboard() {
           {
             icon: <ShoppingCart size={20} />,
             label: 'Total Orders',
-            value: MOCK_STATS.totalOrders,
+            value: MOCK_STATS_REAL.totalOrders,
             color: '#8b5cf6',
             change: '+5 this week',
           },
@@ -204,11 +249,11 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_RECENT_ORDERS.map((order, i) => (
+              {recentOrders.map((order, i) => (
                 <tr
                   key={order.id}
                   style={{
-                    borderBottom: i < MOCK_RECENT_ORDERS.length - 1 ? '1px solid var(--color-border)' : 'none',
+                    borderBottom: i < recentOrders.length - 1 ? '1px solid var(--color-border)' : 'none',
                     transition: 'background 0.2s',
                   }}
                 >
