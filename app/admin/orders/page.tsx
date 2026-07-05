@@ -18,7 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
 const ALL_STATUSES = ['all', 'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
 
 export default function AdminOrdersPage() {
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -49,9 +49,11 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders()
 
+    const channelName = `admin-orders-${Math.random()}`
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        console.log('Real-time order change:', payload)
         fetchOrders()
       })
       .subscribe()
@@ -73,6 +75,7 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId)
     await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
+    await fetchOrders()
     setUpdatingId(null)
   }
 

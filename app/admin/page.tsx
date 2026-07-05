@@ -25,7 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminDashboard() {
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
 
@@ -51,9 +51,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchDashboardData()
 
+    const channelName = `dash-orders-${Math.random()}`
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        console.log('Real-time order change (dash):', payload)
         fetchDashboardData()
       })
       .subscribe()
