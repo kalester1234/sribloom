@@ -3,16 +3,7 @@
 import { useState } from 'react'
 import { Search, Filter } from 'lucide-react'
 
-const MOCK_ORDERS = [
-  { id: '#ORD-001', name: 'Priya Sharma', email: 'priya@example.com', items: 1, product: 'Botanical Glow Serum', total: 62.0, status: 'delivered', date: '2026-07-04' },
-  { id: '#ORD-002', name: 'Meera Nair', email: 'meera@example.com', items: 3, product: 'Complete Ritual Set', total: 125.0, status: 'shipped', date: '2026-07-04' },
-  { id: '#ORD-003', name: 'Kavya Reddy', email: 'kavya@example.com', items: 1, product: 'Luminance Day Cream', total: 48.0, status: 'processing', date: '2026-07-03' },
-  { id: '#ORD-004', name: 'Ananya Iyer', email: 'ananya@example.com', items: 1, product: 'Pure Clarity Cleanser', total: 29.0, status: 'pending', date: '2026-07-03' },
-  { id: '#ORD-005', name: 'Deepika Raj', email: 'deepika@example.com', items: 2, product: 'Botanical Glow Serum × 2', total: 124.0, status: 'confirmed', date: '2026-07-02' },
-  { id: '#ORD-006', name: 'Swati Menon', email: 'swati@example.com', items: 2, product: 'Day Cream + Serum', total: 110.0, status: 'delivered', date: '2026-07-01' },
-  { id: '#ORD-007', name: 'Lakshmi Bose', email: 'lakshmi@example.com', items: 1, product: 'Pure Clarity Cleanser', total: 29.0, status: 'cancelled', date: '2026-07-01' },
-  { id: '#ORD-008', name: 'Ranjitha Kumar', email: 'ranjitha@example.com', items: 3, product: 'Complete Ritual Set', total: 125.0, status: 'shipped', date: '2026-06-30' },
-]
+const MOCK_ORDERS: any[] = []
 
 const STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b',

@@ -9,13 +9,7 @@ const MOCK_STATS = {
   pendingOrders: 7,
 }
 
-const MOCK_RECENT_ORDERS = [
-  { id: '#ORD-001', name: 'Priya Sharma', product: 'Botanical Glow Serum', total: 62.0, status: 'delivered' },
-  { id: '#ORD-002', name: 'Meera Nair', product: 'Complete Ritual Set', total: 125.0, status: 'shipped' },
-  { id: '#ORD-003', name: 'Kavya Reddy', product: 'Luminance Day Cream', total: 48.0, status: 'processing' },
-  { id: '#ORD-004', name: 'Ananya Iyer', product: 'Pure Clarity Cleanser', total: 29.0, status: 'pending' },
-  { id: '#ORD-005', name: 'Deepika Raj', product: 'Botanical Glow Serum × 2', total: 124.0, status: 'confirmed' },
-]
+const MOCK_RECENT_ORDERS: any[] = []
 
 const STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b',
