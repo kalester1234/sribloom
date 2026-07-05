@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Lock, CheckCircle } from 'lucide-react'
 import Footer from '@/components/layout/Footer'
+import { createClient } from '@/lib/supabase/client'
 
 interface FormData {
   full_name: string
@@ -46,12 +47,52 @@ export default function CheckoutPage() {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate order submission
-    await new Promise((r) => setTimeout(r, 1500))
+    try {
+      const supabase = createClient()
+      
+      // Insert into orders table
+      const { data: orderParams, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          guest_email: form.email,
+          status: 'pending',
+          subtotal: totalPrice,
+          shipping: shipping,
+          total: totalPrice + shipping,
+          shipping_address: form,
+          notes: ''
+        })
+        .select()
+        .single()
 
-    setLoading(false)
-    setStep('success')
-    clearCart()
+      if (orderError) throw orderError
+
+      if (orderParams) {
+        // Insert order items
+        const orderItemsInput = items.map(item => ({
+          order_id: orderParams.id,
+          product_name: item.product.name,
+          product_image: item.product.image_url,
+          quantity: item.quantity,
+          unit_price: item.product.price,
+          total_price: item.product.price * item.quantity
+        }))
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItemsInput)
+        
+        if (itemsError) throw itemsError
+      }
+
+      setStep('success')
+      clearCart()
+    } catch (error) {
+      console.error('Error placing order:', error)
+      alert("There was an error processing your order. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (step === 'success') {
